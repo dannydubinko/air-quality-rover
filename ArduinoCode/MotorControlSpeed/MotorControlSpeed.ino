@@ -10,12 +10,13 @@
  * @copyright Copyright (c) 2021-2022
  *
  */
+ #include "Functions.h"
 
-int EA = 19;  // Right Wheels PWM pin (must be a PWM pin).
+int EA = 6;  // Right Wheels PWM pin (must be a PWM pin).
 int I1 = 3;   // Right Wheels direction digital pin 1
 int I2 = 5;   // Right Wheels direction digital pin 2
 
-int EB = 18;  // Left Wheels PWM pin (must be a PWM pin)
+int EB = 12; // Left Wheels PWM pin (must be a PWM pin)
 int I3 = 4;   // Left Wheels direction digital pin 1
 int I4 = 2;   // Left Wheels direction digital pin 2
 
@@ -49,7 +50,6 @@ const byte RIGHTWHEEL_B = 11;
 // Counter to keep track of encoder ticks [integer]
 volatile long encoder_ticks_left = 0;
 volatile long encoder_ticks_right = 0;
-
 
 // Counter to keep track of the last number of ticks [integer]
 long encoder_ticks_last_left = 0;
@@ -106,11 +106,12 @@ void setup() {
 
 
 void loop() {
-  int u = 255;-m
+  int u = 255;
   // Get the elapsed time [ms]
   rover_speed_calculation();
   // Write to the output pins
-  fwd(u);
+  //fwd(u);
+  right_wheels();
 }
 
 void fwd(int u) {
@@ -149,28 +150,30 @@ void cw_circle() {
 }
 
 
-void figure_eight() {
-  // Approach: do one full cw circle, then one full ccw circle immediately after
-  int now = millis();
+// void figure_eight() {
+//   // Approach: do one full cw circle, then one full ccw circle immediately after
+//   int now = millis();
 
-  while (millis() - now < 1000) {
-    ccw_circle();
-  }
+//   while (millis() - now < 1000) {
+//     ccw_circle();
+//   }
 
-  now = millis();
-  while (millis() - now < 1000) {
-    cw_circle();
-  }
+//   now = millis();
+//   while (millis() - now < 1000) {
+//     cw_circle();
+//   }
+// }
+
+void right_wheels(){
+  digitalWrite(I1, HIGH);
+  digitalWrite(I2, LOW);
+  digitalWrite(I3, HIGH);
+  digitalWrite(I4, LOW);
+
+  analogWrite(EA, 200);  // right side
+  //analogWrite(EB, 255);  // left side
 }
 
-void right_wheels(int uR) {
-  // Input selected direction
-  digitalWrite(I1, LOW);
-  digitalWrite(I2, HIGH);
-
-  // PWM control for each side of robot to the motor driver
-  analogWrite(EA, uR);  // right side
-}
 
 void motor_ctrl(int uA, int uB, bool i1, bool i2, bool i3, bool i4) {
   // Input selected direction
@@ -184,7 +187,7 @@ void motor_ctrl(int uA, int uB, bool i1, bool i2, bool i3, bool i4) {
   analogWrite(EB, uB);  // left side
 }
 
-// Compute vehicle speed [m/s]
+//Compute vehicle speed [m/s]
 double compute_vehicle_speed(double v1, double v2) {
   double v;
   v1 = abs(v1);
