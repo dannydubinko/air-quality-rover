@@ -1,5 +1,5 @@
 /**
- * @file ws1.ino
+ * @file motor-control-speed.ino
  * @author Joshua Marshall (joshua.marshall@queensu.ca)
  * @author Sabrina Button [updated] (sabrina.button@queensu.ca)
  * @author Daniel Dubinko [updated] (daniel.dubinko@icloud.com)
@@ -10,6 +10,7 @@
  * @copyright Copyright (c) 2021-2022
  *
  */
+#include <Arduino_LSM6DS3.h>
 
 int EA = 19;  // Right Wheels PWM pin (must be a PWM pin).
 int I1 = 3;   // Right Wheels direction digital pin 1
@@ -226,4 +227,8 @@ void rover_speed_calculation(){
     encoder_ticks_right = 0;
     
   }
+}
+
+void turning_rate_calculation(){
+
 }

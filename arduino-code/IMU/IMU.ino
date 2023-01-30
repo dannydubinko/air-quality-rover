@@ -23,6 +23,8 @@ float a_x, a_y, a_z;
 // Variables to store sample rates from sensor [Hz]
 float a_f, g_f;
 
+float ox_bias, oy_bias, oz_bias;
+
 void setup()
 {
     // Open the serial port at 115200 bps
@@ -57,6 +59,10 @@ void setup()
     Serial.println(a_f);
     Serial.print("Gyroscope sample rate: ");
     Serial.println(g_f);
+
+    Serial.print("Wait! Calculating Gyro bias.");
+    calculate_gyro_bias();
+    Serial.print("Done. Starting program.");
 }
 
 void loop()
@@ -84,8 +90,7 @@ void loop()
     if (IMU.gyroscopeAvailable())
     {
         IMU.readGyroscope(omega_x, omega_y, omega_z);
-
-            Serial.print("Gyro x,y,z");
+        Serial.print("Gyro x,y,z");
         // Print the gyroscope measurements to the Serial Monitor
         Serial.print(omega_x);
         Serial.print("\t");
@@ -93,6 +98,39 @@ void loop()
         Serial.print("\t");
         Serial.print(omega_z);
         Serial.print(" deg/s\n");
+
     }
+
     delay(1000);
+}
+
+void calculate_gyro_bias(){
+    float omega_x_[10];
+    float omega_y_[10];
+    float omega_z_[10];
+
+    for(int reading=0;reading<10;reading++){
+        if (IMU.gyroscopeAvailable())
+        {
+            IMU.readGyroscope(omega_x, omega_y, omega_z);
+            omega_x_[reading] = omega_x;
+            omega_y_[reading] = omega_y;
+            omega_z_[reading] = omega_z;
+        }
+        delay(10);
+    }
+
+    ox_bias = sum_arr(omega_x_) / 10;
+    oy_bias = sum_arr(omega_y_) / 10;
+    oz_bias = sum_arr(omega_z_) / 10;
+}
+
+float sum_arr(float *arr){
+    float sum = 0;
+    for(int i=0;i<sizeof(arr);i++)
+    {
+        sum += arr[i];
+    }
+
+    return sum;
 }
