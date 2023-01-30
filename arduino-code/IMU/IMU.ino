@@ -91,6 +91,10 @@ void loop()
     {
         IMU.readGyroscope(omega_x, omega_y, omega_z);
         Serial.print("Gyro x,y,z");
+        omega_x -= ox_bias;
+        omega_y -= oy_bias;
+        omega_z -= oz_bias;
+
         // Print the gyroscope measurements to the Serial Monitor
         Serial.print(omega_x);
         Serial.print("\t");

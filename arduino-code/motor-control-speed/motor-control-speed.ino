@@ -35,6 +35,8 @@ double omega_R = 0.0;
 double vL = 0.0;
 double vR = 0.0;
 
+float g_omega_x, g_omega_y, g_omega_z;
+
 // Sampling interval for measurements in milliseconds
 const int T = 1000;
 // Counters for milliseconds during interval
@@ -217,8 +219,6 @@ void rover_speed_calculation(){
     Serial.print(compute_vehicle_speed(vL, vR));
     Serial.print("\n");
 
-    
-
     // Record the current time [ms]
     t_last = t_now;
 
@@ -229,6 +229,26 @@ void rover_speed_calculation(){
   }
 }
 
-void turning_rate_calculation(){
+// use this to verify the turn; has a lot of noise
+// todo: add library for IMU to this program
+/*
+float gyro_turning_rate(){
 
-}
+  if (IMU.gyroscopeAvailable())
+    {
+        IMU.readGyroscope(g_omega_x, g_omega_y, g_omega_z);
+        Serial.print("Gyro x,y,z");
+        
+        // Print the gyroscope measurements to the Serial Monitor
+        Serial.print(g_omega_x);
+        Serial.print("\t");
+        Serial.print(g_omega_y);
+        Serial.print("\t");
+        Serial.print(g_omega_z);
+        Serial.print(" deg/s\n");
+
+    }
+
+    // THE TURNING RATE ANALGOUS TO THAT IN compute_vehichle_rate is omega_z.
+    return g_omega_z;
+}*/
