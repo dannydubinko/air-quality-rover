@@ -3,6 +3,7 @@
  * @author Joshua Marshall (joshua.marshall@queensu.ca)
  * @author Sabrina Button [updated] (sabrina.button@queensu.ca)
  * @author Daniel Dubinko [updated] (daniel.dubinko@icloud.com)
+ * @author Luke Major [Updated] (luke.major@queensu.ca)
  * @brief Arduino program to drive one wheel motor through a motor driver.
  * @version 2.0 
  * @date 2023-01-16
