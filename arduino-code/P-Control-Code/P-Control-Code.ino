@@ -30,6 +30,9 @@ const int TPR_right = 3100;  //3100
 // Wheel radius [m]
 const double RHO = 0.0625;
 
+// Proportional Constant
+double right_Proportional_Constant, left_Proportional_Constant;
+
 // Variable to store estimated angular rate of left wheel [rad/s]
 double desired_Vehicle_Speed = 0;
 double desired_Omega = 0;
@@ -125,9 +128,9 @@ void loop() {
   
 } 
 
-void left_PI_Speed_Control(double desired_Vehicle_Speed, double desired_Omega) {
+double left_PI_Speed_Control(double desired_Vehicle_Speed, double desired_Omega) {
 
-  double desired_Left_Velocity = desired_Vehicle_Speed, - (1 / 2) * 0.2775 * desired_Omega;
+  double desired_Left_Velocity = desired_Vehicle_Speed - (1 / 2) * 0.2775 * desired_Omega;
 
   double left_Power_Input = right_Proportional_Constant * (desired_Left_Velocity - compute_Left_Velocity());
 
@@ -137,7 +140,7 @@ void left_PI_Speed_Control(double desired_Vehicle_Speed, double desired_Omega) {
 
 double right_PI_Speed_Control(double desired_Velocity, double desired_Omega) {
 
-  double desired_Right_Velocity = desired_Veloctity + (1 / 2) * 0.2775 * desired_Omega;
+  double desired_Right_Velocity = desired_Velocity + (1 / 2) * 0.2775 * desired_Omega;
 
   double right_Power_Input = left_Proportional_Constant * (desired_Right_Velocity - compute_Right_Velocity());
 
@@ -151,9 +154,9 @@ double compute_Left_Velocity() {
   int roverSpeed;
   if (t_now - t_last >= T) {
     // Estimate the rotational speed [rad/s]
-    left_Omega = 2.0 * PI * ((double)encoder_ticks_left / (double)TPR_left) * 1000.0 / (double)(t_now - t_last);
+    omega_Left = 2.0 * PI * ((double)encoder_ticks_left / (double)TPR_left) * 1000.0 / (double)(t_now - t_last);
   
-    left_Velocity = RHO * omega_L;
+    left_Velocity = RHO * omega_Left;
 
     // Record the current time [ms]
     t_last = t_now;
@@ -172,8 +175,8 @@ double compute_Right_Velocity() {
   int roverSpeed;
   if (t_now - t_last >= T) {
     // Estimate the rotational speed [rad/s]
-    right_Omega = 2.0 * PI * ((double)encoder_ticks_right / (double)TPR_right) * 1000.0 / (double)(t_now - t_last);
-    right_Velocity = RHO * omega_R;
+    omega_Right = 2.0 * PI * ((double)encoder_ticks_right / (double)TPR_right) * 1000.0 / (double)(t_now - t_last);
+    right_Velocity = RHO * omega_Right;
 
     // Record the current time [ms]
     t_last = t_now;
