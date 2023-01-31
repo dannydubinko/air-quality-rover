@@ -31,7 +31,8 @@ const int TPR_right = 3100;  //3100
 const double RHO = 0.0625;
 
 // Proportional Constant
-double right_Proportional_Constant, left_Proportional_Constant;
+double right_Proportional_Constant = 1;
+double left_Proportional_Constant = 1;
 
 // Variable to store estimated angular rate of left wheel [rad/s]
 double desired_Vehicle_Speed = 0;
@@ -52,6 +53,7 @@ const byte LEFTWHEEL_A = 8;
 const byte LEFTWHEEL_B = 9;
 const byte RIGHTWHEEL_A = 10;
 const byte RIGHTWHEEL_B = 11;
+const long L = 0.2775;
 
 // Counter to keep track of encoder ticks [integer]
 volatile long encoder_ticks_left = 0;
@@ -130,25 +132,25 @@ void loop() {
 
 double left_PI_Speed_Control(double desired_Vehicle_Speed, double desired_Omega) {
 
-  double desired_Left_Velocity = desired_Vehicle_Speed - (1 / 2) * 0.2775 * desired_Omega;
+  double desired_Left_Velocity = desired_Vehicle_Speed - (1 / 2) * L * desired_Omega;
 
-  double left_Power_Input = right_Proportional_Constant * (desired_Left_Velocity - compute_Left_Velocity());
+  double left_PWM_Input = right_Proportional_Constant * (desired_Left_Velocity - feedback_Left_Velocity());
 
-  return left_Power_Input;
+  return left_PWM_Input;
 
 }
 
 double right_PI_Speed_Control(double desired_Velocity, double desired_Omega) {
 
-  double desired_Right_Velocity = desired_Velocity + (1 / 2) * 0.2775 * desired_Omega;
+  double desired_Right_Velocity = desired_Velocity + (1 / 2) * L * desired_Omega;
 
-  double right_Power_Input = left_Proportional_Constant * (desired_Right_Velocity - compute_Right_Velocity());
+  double right_PWM_Input = left_Proportional_Constant * (desired_Right_Velocity - feedback_Right_Velocity());
 
-  return right_Power_Input;
+  return right_PWM_Input;
 
 }
 
-double compute_Left_Velocity() {
+double feedback_Left_Velocity() {
 
   t_now = millis();
   int roverSpeed;
@@ -169,7 +171,7 @@ double compute_Left_Velocity() {
   }
 }
 
-double compute_Right_Velocity() {
+double feedback_Right_Velocity() {
 
   t_now = millis();
   int roverSpeed;
@@ -188,12 +190,12 @@ double compute_Right_Velocity() {
   }
 }
 
-void fwd(int right_Power_Input, int left_Power_Input) {
+void fwd(int right_PWM_Input, int left_PWM_Input) {
   // both sides drive forward.
-  motor_ctrl(right_Power_Input, left_Power_Input, LOW, HIGH, LOW, HIGH);
+  motor_ctrl(right_PWM_Input, left_PWM_Input, LOW, HIGH, LOW, HIGH);
 }
 
-void motor_ctrl(int right_Power_Input, int left_Power_Input, bool i1, bool i2, bool i3, bool i4) {
+void motor_ctrl(int right_PWM_Input, int left_PWM_Input, bool i1, bool i2, bool i3, bool i4) {
   // Input selected direction
   digitalWrite(I1, i1);
   digitalWrite(I2, i2);
@@ -201,8 +203,8 @@ void motor_ctrl(int right_Power_Input, int left_Power_Input, bool i1, bool i2, b
   digitalWrite(I4, i4);
 
   // PWM control for each side of robot to the motor driver
-  analogWrite(EA, right_Power_Input);  // right side
-  analogWrite(EB, left_Power_Input);  // left side
+  analogWrite(EA, right_PWM_Input);  // right side
+  analogWrite(EB, left_PWM_Input);  // left side
 }
 
 
