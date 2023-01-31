@@ -30,9 +30,11 @@ const int TPR_right = 3100;  //3100
 // Wheel radius [m]
 const double RHO = 0.0625;
 
-// Proportional Constant
-double right_Proportional_Constant = 1;
-double left_Proportional_Constant = 1;
+// Proportional Constants
+const double k_P_L = 200;
+const double k_P_R = 200;
+const double k_I_L = 1;
+const double k_I_R = 1;
 
 // Variable to store estimated angular rate of left wheel [rad/s]
 double desired_Vehicle_Speed = 0;
@@ -41,6 +43,7 @@ double omega_Left = 0.0;
 double omega_Right = 0.0;
 double left_Velocity = 0.0;
 double right_Velocity = 0.0;
+double integral_term_prev = 0;
 
 // Sampling interval for measurements in milliseconds
 const int T = 1000;
@@ -118,36 +121,59 @@ void setup() {
 
 void loop() {
 
-  int desired_Vehicle_Speed = 0;
+  int desired_Vehicle_Speed = 200;
 
-  int desired_Omega = 0;
+  int desired_Omega = 1 / L * (1);
 
   do{
 
-  fwd(right_PI_Speed_Control(desired_Vehicle_Speed, desired_Omega), left_PI_Speed_Control(desired_Vehicle_Speed, desired_Omega));
+    double e_prop_L = compute_proportional(-1, desired_Vehicle_Speed, desired_Omega, feedback_Left_Velocity);
+    double e_int_L = compute_integral(-1, desired_Vehicle_Speed, desired_Omega, feedback_Left_Velocity);
+    int u_Left = PI_controller(e_prop_L, e_int_L, k_P_L, k_I_L, 0);
+     double e_prop_R = compute_proportional(1, desired_Vehicle_Speed, desired_Omega, feedback_Right_Velocity);
+    double e_int_R = compute_integral(1, desired_Vehicle_Speed, desired_Omega, feedback_Right_Velocity);
+    int u_Right = PI_controller(e_prop_R, e_int_R, k_P_R, k_I_R, 0);
+  fwd( u_Left, u_Right );
+  delay(10);
 
   } while (1);
   
 } 
 
-double left_PI_Speed_Control(double desired_Vehicle_Speed, double desired_Omega) {
-
-  double desired_Left_Velocity = desired_Vehicle_Speed - (1 / 2) * L * desired_Omega;
-
-  double left_PWM_Input = right_Proportional_Constant * (desired_Left_Velocity - feedback_Left_Velocity());
-
-  return left_PWM_Input;
-
+int PI_controller(double proportional_term, double integral_term, double k_P, double k_I, bool anti_windup){
+  short u;
+  if(!anti_windup){
+    u = (short)(k_P * proportional_term + k_I * integral_term);
+  } else{
+    // If anti-windup is on, do not consider the integral_term
+    u = (short)(k_P * proportional_term);
+  }
+ 
+  if (u > 255){
+    u = 255;
+    // Call function again with anti-windup on.
+    u = PI_controller(proportional_term, integral_term,k_P, k_I, 1);
+  } else if (u < -255){
+    u = -255;
+    // Call function again with anti-windup on.
+    u = PI_controller(proportional_term, integral_term,k_P, k_I, 1);
+  }
+  return (int)u;
 }
 
-double right_PI_Speed_Control(double desired_Velocity, double desired_Omega) {
+// Compute the proportional term, vL,d - vL[i]
+double compute_proportional(int coeff, double v_d, double omega_d, double feedback_func()){
+  // int coeff accounts for left vs right movement; coeff is -1 for left and +1 for right.
+  double v_des = v_d + coeff* (1/2) * L * omega_d;
+  return v_des - feedback_func();
+}
 
-  double desired_Right_Velocity = desired_Velocity + (1 / 2) * L * desired_Omega;
-
-  double right_PWM_Input = left_Proportional_Constant * (desired_Right_Velocity - feedback_Right_Velocity());
-
-  return right_PWM_Input;
-
+// Compute the integral term as the sum of the current proportional term plus all previous terms.
+double compute_integral(int coeff, double v_d, double omega_d, double feedback_func()){
+  // int coeff accounts for left vs right movement; coeff is -1 for left and +1 for right.
+  double v_des = v_d + coeff* (1/2) * L * omega_d;
+  integral_term_prev += v_des - feedback_func();
+  return integral_term_prev;
 }
 
 double feedback_Left_Velocity() {
@@ -209,3 +235,23 @@ void motor_ctrl(int right_PWM_Input, int left_PWM_Input, bool i1, bool i2, bool 
 
 
 
+/********** Achived functions ***********
+double left_PI_Speed_Control(double desired_Vehicle_Speed, double desired_Omega) {
+
+  double desired_Left_Velocity = desired_Vehicle_Speed - (1 / 2) * L * desired_Omega;
+
+  double left_PWM_Input = right_Proportional_Constant * (desired_Left_Velocity - feedback_Left_Velocity());
+
+  return left_PWM_Input;
+
+}
+
+double right_PI_Speed_Control(double desired_Velocity, double desired_Omega) {
+
+  double desired_Right_Velocity = desired_Velocity + (1 / 2) * L * desired_Omega;
+
+  double right_PWM_Input = left_Proportional_Constant * (desired_Right_Velocity - feedback_Right_Velocity());
+
+  return right_PWM_Input;
+
+}*/
