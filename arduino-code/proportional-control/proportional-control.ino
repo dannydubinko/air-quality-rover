@@ -140,6 +140,7 @@ void loop() {
 } 
 
 // Adjust the value to be written to motors according to the error between the expected velocity and true velocity according to encoders
+// written by Sabrina (2023/02/01)
 void PI_controller(double velocity_target, double omega_target, int *error_buffer, int *speed_buffer){
   // compute difference between current expected velocity and the feedback from the encoder (true velocity)
   double error_right = (velocity_target + (1/2) * L * omega_target) - encoderFeedback_Right_Velocity();
