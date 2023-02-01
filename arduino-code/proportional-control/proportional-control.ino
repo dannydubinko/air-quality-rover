@@ -20,7 +20,7 @@ int EB = 18;  // Left Wheels PWM pin (must be a PWM pin)
 int I3 = 4;   // Left Wheels direction digital pin 1
 int I4 = 2;   // Left Wheels direction digital pin 2
 
-int left_Power_Input= 0;
+int left_Power_Input = 0;
 int right_Power_Input = 0;
 
 // Encoder ticks per (motor) revolution (TPR)
@@ -31,7 +31,8 @@ const int TPR_right = 3100;  //3100
 const double RHO = 0.0625;
 
 // Proportional Constant
-double right_Proportional_Constant, left_Proportional_Constant;
+double right_Proportional_Constant = 100;
+double left_Proportional_Constant = 100;
 
 // Variable to store estimated angular rate of left wheel [rad/s]
 double desired_Vehicle_Speed = 0;
@@ -112,40 +113,32 @@ void setup() {
   // Print a message
   Serial.print("Program initialized.");
   Serial.print("\n");
+  int desired_Vehicle_Speed = 0;
+
+  int desired_Omega = 0;
 }
 
 void loop() {
 
-  int desired_Vehicle_Speed = 0;
-
-  int desired_Omega = 0;
-
-  do{
-
   fwd(right_PI_Speed_Control(desired_Vehicle_Speed, desired_Omega), left_PI_Speed_Control(desired_Vehicle_Speed, desired_Omega));
-
-  } while (1);
-  
-} 
+}
 
 double left_PI_Speed_Control(double desired_Vehicle_Speed, double desired_Omega) {
 
-  double desired_Left_Velocity = desired_Vehicle_Speed - (1 / 2) * 0.2775 * desired_Omega;
+  double desired_Left_Velocity = desired_Vehicle_Speed - (1 / 2) * 0.2775 * desired_Omega;  //v_L in equation
 
   double left_Power_Input = right_Proportional_Constant * (desired_Left_Velocity - compute_Left_Velocity());
 
   return left_Power_Input;
-
 }
 
 double right_PI_Speed_Control(double desired_Velocity, double desired_Omega) {
 
-  double desired_Right_Velocity = desired_Velocity + (1 / 2) * 0.2775 * desired_Omega;
+  double desired_Right_Velocity = desired_Velocity + (1 / 2) * 0.2775 * desired_Omega;  //v_R in equation
 
   double right_Power_Input = left_Proportional_Constant * (desired_Right_Velocity - compute_Right_Velocity());
 
   return right_Power_Input;
-
 }
 
 double compute_Left_Velocity() {
@@ -155,7 +148,7 @@ double compute_Left_Velocity() {
   if (t_now - t_last >= T) {
     // Estimate the rotational speed [rad/s]
     omega_Left = 2.0 * PI * ((double)encoder_ticks_left / (double)TPR_left) * 1000.0 / (double)(t_now - t_last);
-  
+
     left_Velocity = RHO * omega_Left;
 
     // Record the current time [ms]
@@ -163,9 +156,7 @@ double compute_Left_Velocity() {
 
     // Reset the encoder ticks counter
     encoder_ticks_left = 0;
-
     return left_Velocity;
-
   }
 }
 
@@ -183,7 +174,6 @@ double compute_Right_Velocity() {
 
     // Reset the encoder ticks counter
     encoder_ticks_right = 0;
-
     return right_Velocity;
   }
 }
@@ -202,8 +192,5 @@ void motor_ctrl(int right_Power_Input, int left_Power_Input, bool i1, bool i2, b
 
   // PWM control for each side of robot to the motor driver
   analogWrite(EA, right_Power_Input);  // right side
-  analogWrite(EB, left_Power_Input);  // left side
+  analogWrite(EB, left_Power_Input);   // left side
 }
-
-
-
