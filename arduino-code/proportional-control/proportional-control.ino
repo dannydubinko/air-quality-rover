@@ -43,7 +43,8 @@ double omega_Left = 0.0;
 double omega_Right = 0.0;
 double left_Velocity = 0.0;
 double right_Velocity = 0.0;
-double integral_term_prev = 0;
+double integral_sum_right = 0;
+double integral_sum_left = 0;
 
 // Sampling interval for measurements in milliseconds
 const int T = 1000;
@@ -126,57 +127,49 @@ void loop() {
   int desired_Omega = 1 / L * (1);
 
   do{
+    // buffers to collect data from control function
+    int error[2];
+    int speed[2];
 
-    double e_prop_L = compute_proportional(-1, desired_Vehicle_Speed, desired_Omega, feedback_Left_Velocity);
-    double e_int_L = compute_integral(-1, desired_Vehicle_Speed, desired_Omega, feedback_Left_Velocity);
-    int u_Left = PI_controller(e_prop_L, e_int_L, k_P_L, k_I_L, 0);
-     double e_prop_R = compute_proportional(1, desired_Vehicle_Speed, desired_Omega, feedback_Right_Velocity);
-    double e_int_R = compute_integral(1, desired_Vehicle_Speed, desired_Omega, feedback_Right_Velocity);
-    int u_Right = PI_controller(e_prop_R, e_int_R, k_P_R, k_I_R, 0);
-  fwd( u_Left, u_Right );
-  delay(10);
+    PI_controller(desired_Vehicle_Speed, desired_Omega, error, speed);
+
+    drive_forward(speed[0], speed[1]);
 
   } while (1);
   
 } 
 
-int PI_controller(double proportional_term, double integral_term, double k_P, double k_I, bool anti_windup){
-  short u;
-  if(!anti_windup){
-    u = (short)(k_P * proportional_term + k_I * integral_term);
-  } else{
-    // If anti-windup is on, do not consider the integral_term
-    u = (short)(k_P * proportional_term);
+// Adjust the value to be written to motors according to the error between the expected velocity and true velocity according to encoders
+void PI_controller(double velocity_target, double omega_target, int *error_buffer, int *speed_buffer){
+  // compute difference between current expected velocity and the feedback from the encoder (true velocity)
+  double error_right = (velocity_target + (1/2) * L * omega_target) - encoderFeedback_Right_Velocity();
+  double error_left = (velocity_target - (1/2) * L * omega_target) - encoderFeedback_Left_Velocity();
+
+  // compute the integral sum of Vdesired - Vtrue by adding the current error to the sum of all previous errors.
+  // NOTE**: for each new movement, integral sum should be reset
+  integral_sum_right += error_right;
+  integral_sum_left += error_left;
+
+  // compute velocities according to standard PI function
+  double velocity_Right = k_P_R*error_right + k_I_R*integral_sum_right;
+  double velocity_Left = k_P_L*error_left + k_I_L*integral_sum_left;
+
+  // anti-windup (if the velocity exceeds 255, disregard integral sum)
+  if (abs(velocity_Left) > 255 ){
+    velocity_Left -= k_I_L*integral_sum_left;
   }
- 
-  if (u > 255){
-    u = 255;
-    // Call function again with anti-windup on.
-    u = PI_controller(proportional_term, integral_term,k_P, k_I, 1);
-  } else if (u < -255){
-    u = -255;
-    // Call function again with anti-windup on.
-    u = PI_controller(proportional_term, integral_term,k_P, k_I, 1);
+  if (abs(velocity_Right) > 255 ){
+    velocity_Right-= k_I_R*integral_sum_right;
   }
-  return (int)u;
-}
 
-// Compute the proportional term, vL,d - vL[i]
-double compute_proportional(int coeff, double v_d, double omega_d, double feedback_func()){
-  // int coeff accounts for left vs right movement; coeff is -1 for left and +1 for right.
-  double v_des = v_d + coeff* (1/2) * L * omega_d;
-  return v_des - feedback_func();
-}
+  // write speeds back to buffer array as output
+  error_buffer[0] = (int)error_right;
+  error_buffer[1] = (int)error_left;
+  speed_buffer[0] = (int)velocity_Right;
+  speed_buffer[1] = (int)velocity_Left;
+};
 
-// Compute the integral term as the sum of the current proportional term plus all previous terms.
-double compute_integral(int coeff, double v_d, double omega_d, double feedback_func()){
-  // int coeff accounts for left vs right movement; coeff is -1 for left and +1 for right.
-  double v_des = v_d + coeff* (1/2) * L * omega_d;
-  integral_term_prev += v_des - feedback_func();
-  return integral_term_prev;
-}
-
-double feedback_Left_Velocity() {
+double encoderFeedback_Left_Velocity() {
 
   t_now = millis();
   int roverSpeed;
@@ -197,7 +190,7 @@ double feedback_Left_Velocity() {
   }
 }
 
-double feedback_Right_Velocity() {
+double encoderFeedback_Right_Velocity() {
 
   t_now = millis();
   int roverSpeed;
@@ -216,7 +209,7 @@ double feedback_Right_Velocity() {
   }
 }
 
-void fwd(int right_PWM_Input, int left_PWM_Input) {
+void drive_forward(int right_PWM_Input, int left_PWM_Input) {
   // both sides drive forward.
   motor_ctrl(right_PWM_Input, left_PWM_Input, LOW, HIGH, LOW, HIGH);
 }
@@ -232,26 +225,3 @@ void motor_ctrl(int right_PWM_Input, int left_PWM_Input, bool i1, bool i2, bool 
   analogWrite(EA, right_PWM_Input);  // right side
   analogWrite(EB, left_PWM_Input);  // left side
 }
-
-
-
-/********** Achived functions ***********
-double left_PI_Speed_Control(double desired_Vehicle_Speed, double desired_Omega) {
-
-  double desired_Left_Velocity = desired_Vehicle_Speed - (1 / 2) * L * desired_Omega;
-
-  double left_PWM_Input = right_Proportional_Constant * (desired_Left_Velocity - feedback_Left_Velocity());
-
-  return left_PWM_Input;
-
-}
-
-double right_PI_Speed_Control(double desired_Velocity, double desired_Omega) {
-
-  double desired_Right_Velocity = desired_Velocity + (1 / 2) * L * desired_Omega;
-
-  double right_PWM_Input = left_Proportional_Constant * (desired_Right_Velocity - feedback_Right_Velocity());
-
-  return right_PWM_Input;
-
-}*/
