@@ -33,8 +33,8 @@ const double RHO = 0.0625;
 // Proportional Constants
 const double k_P_L = 200;
 const double k_P_R = 200;
-const double k_I_L = 1;
-const double k_I_R = 1;
+const double k_I_L = 100;
+const double k_I_R = 100;
 
 // Variable to store estimated angular rate of left wheel [rad/s]
 double desired_Vehicle_Speed = 0;
@@ -43,8 +43,8 @@ double omega_Left = 0.0;
 double omega_Right = 0.0;
 double left_Velocity = 0.0;
 double right_Velocity = 0.0;
-double integral_sum_right = 0;
-double integral_sum_left = 0;
+double error_sum_right = 0;
+double error_sum_left = 0;
 
 // Sampling interval for measurements in milliseconds
 const int T = 1000;
@@ -147,19 +147,19 @@ void PI_controller(double velocity_target, double omega_target, int *error_buffe
 
   // compute the integral sum of Vdesired - Vtrue by adding the current error to the sum of all previous errors.
   // NOTE**: for each new movement, integral sum should be reset
-  integral_sum_right += error_right;
-  integral_sum_left += error_left;
+  error_sum_right += error_right;
+  error_sum_left += error_left;
 
   // compute velocities according to standard PI function
-  double velocity_Right = k_P_R*error_right + k_I_R*integral_sum_right;
-  double velocity_Left = k_P_L*error_left + k_I_L*integral_sum_left;
+  double velocity_Right = k_P_R*error_right + k_I_R*error_sum_right;
+  double velocity_Left = k_P_L*error_left + k_I_L*error_sum_left;
 
   // anti-windup (if the velocity exceeds 255, disregard integral sum)
   if (abs(velocity_Left) > 255 ){
-    velocity_Left -= k_I_L*integral_sum_left;
+    velocity_Left -= k_I_L*error_sum_left;
   }
   if (abs(velocity_Right) > 255 ){
-    velocity_Right-= k_I_R*integral_sum_right;
+    velocity_Right-= k_I_R*error_sum_right;
   }
 
   // write speeds back to buffer array as output
