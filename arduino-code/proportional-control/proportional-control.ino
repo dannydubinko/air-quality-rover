@@ -12,15 +12,15 @@
  *
  */
 
-int EA = 19;  // Right Wheels PWM pin (must be a PWM pin).
-int I1 = 3;   // Right Wheels direction digital pin 1
-int I2 = 5;   // Right Wheels direction digital pin 2
+int EA = 6;  // Right Wheels PWM pin (must be a PWM pin).
+int I1 = 3;  // Right Wheels direction digital pin 1
+int I2 = 5;  // Right Wheels direction digital pin 2
 
-int EB = 18;  // Left Wheels PWM pin (must be a PWM pin)
+int EB = 12;  // Left Wheels PWM pin (must be a PWM pin)
 int I3 = 4;   // Left Wheels direction digital pin 1
 int I4 = 2;   // Left Wheels direction digital pin 2
 
-int left_Power_Input= 0;
+int left_Power_Input = 0;
 int right_Power_Input = 0;
 
 // Encoder ticks per (motor) revolution (TPR)
@@ -31,7 +31,8 @@ const int TPR_right = 3100;  //3100
 const double RHO = 0.0625;
 
 // Proportional Constant
-double right_Proportional_Constant, left_Proportional_Constant;
+double right_Proportional_Constant = 50;
+double left_Proportional_Constant = 50;
 
 // Variable to store estimated angular rate of left wheel [rad/s]
 double desired_Vehicle_Speed = 0;
@@ -42,7 +43,7 @@ double left_Velocity = 0.0;
 double right_Velocity = 0.0;
 
 // Sampling interval for measurements in milliseconds
-const int T = 1000;
+const int T = 50;
 // Counters for milliseconds during interval
 long t_now = 0;
 long t_last = 0;
@@ -63,7 +64,7 @@ long encoder_ticks_last_right = 0;
 
 // This function is called when SIGNAL_A goes HIGH
 void decodeEncoderTicksRight() {
-  if (digitalRead(RIGHTWHEEL_B) == LOW) {
+  if (digitalRead(RIGHTWHEEL_B) == HIGH) {
     // SIGNAL_A leads SIGNAL_B, so count one way
     encoder_ticks_right--;
   } else {
@@ -116,50 +117,83 @@ void setup() {
 
 void loop() {
 
-  int desired_Vehicle_Speed = 0;
+  int desired_Vehicle_Speed = 3;
 
   int desired_Omega = 0;
 
-  do{
-
-  fwd(right_PI_Speed_Control(desired_Vehicle_Speed, desired_Omega), left_PI_Speed_Control(desired_Vehicle_Speed, desired_Omega));
-
-  } while (1);
-  
-} 
-
-double left_PI_Speed_Control(double desired_Vehicle_Speed, double desired_Omega) {
-
-  double desired_Left_Velocity = desired_Vehicle_Speed - (1 / 2) * 0.2775 * desired_Omega;
-
-  double left_Power_Input = right_Proportional_Constant * (desired_Left_Velocity - compute_Left_Velocity());
-
-  return left_Power_Input;
-
-}
-
-double right_PI_Speed_Control(double desired_Velocity, double desired_Omega) {
-
-  double desired_Right_Velocity = desired_Velocity + (1 / 2) * 0.2775 * desired_Omega;
-
-  double right_Power_Input = left_Proportional_Constant * (desired_Right_Velocity - compute_Right_Velocity());
-
-  return right_Power_Input;
-
-}
-
-double compute_Left_Velocity() {
 
   t_now = millis();
   int roverSpeed;
   if (t_now - t_last >= T) {
     // Estimate the rotational speed [rad/s]
     omega_Left = 2.0 * PI * ((double)encoder_ticks_left / (double)TPR_left) * 1000.0 / (double)(t_now - t_last);
-  
+    omega_Right = 2.0 * PI * ((double)encoder_ticks_right / (double)TPR_right) * 1000.0 / (double)(t_now - t_last);
+
+    right_Velocity = RHO * omega_Right;
     left_Velocity = RHO * omega_Left;
+
+    double desired_Left_Velocity = desired_Vehicle_Speed - (0.5) * 0.2775 * desired_Omega;
+    double desired_Right_Velocity = desired_Vehicle_Speed + (0.5) * 0.2775 * desired_Omega;
+
+    int left_Power_Input = (int)(right_Proportional_Constant * (desired_Left_Velocity - left_Velocity));
+    int right_Power_Input = (int)(left_Proportional_Constant * (desired_Right_Velocity - right_Velocity));
 
     // Record the current time [ms]
     t_last = t_now;
+
+    // Reset the encoder ticks counter
+    encoder_ticks_left = 0;
+
+    // Reset the encoder ticks counter
+    encoder_ticks_right = 0;
+
+    Serial.print(left_Power_Input);
+    Serial.print(' ');
+    Serial.print(right_Power_Input);
+    Serial.print('\n');
+
+    fwd(right_Power_Input, left_Power_Input);
+  }
+}
+
+/*double left_PI_Speed_Control(double desired_Vehicle_Speed, double desired_Omega, double left_Velocity) {
+
+  double desired_Left_Velocity = desired_Vehicle_Speed - (0.5) * 0.2775 * desired_Omega;
+
+  int left_Power_Input = (int)(right_Proportional_Constant * (desired_Left_Velocity - left_Velocity));
+
+  Serial.print(left_Power_Input);
+  Serial.print(' ');
+
+  return left_Power_Input;
+}
+
+int right_PI_Speed_Control(double desired_Velocity, double desired_Omega, double right_Velocity) {
+
+  double desired_Right_Velocity = desired_Velocity + (0.5) * 0.2775 * desired_Omega;
+
+  int right_Power_Input = (int)(left_Proportional_Constant * (desired_Right_Velocity - right_Velocity));
+
+  Serial.print(right_Power_Input);
+  Serial.print('\n');
+
+  return right_Power_Input;
+}
+
+/*double compute_Left_Velocity() {
+
+  t_now = millis();
+  int roverSpeed;
+  if (t_now - t_last_left >= T) {
+    // Estimate the rotational speed [rad/s]
+    omega_Left = 2.0 * PI * ((double)encoder_ticks_left / (double)TPR_left) * 1000.0 / (double)(t_now - t_last_left);
+  
+    left_Velocity = RHO * omega_Left;
+
+
+
+    // Record the current time [ms]
+    t_last_left = t_now;
 
     // Reset the encoder ticks counter
     encoder_ticks_left = 0;
@@ -173,20 +207,20 @@ double compute_Right_Velocity() {
 
   t_now = millis();
   int roverSpeed;
-  if (t_now - t_last >= T) {
+  if (t_now - t_last_right >= T) {
     // Estimate the rotational speed [rad/s]
-    omega_Right = 2.0 * PI * ((double)encoder_ticks_right / (double)TPR_right) * 1000.0 / (double)(t_now - t_last);
+    omega_Right = 2.0 * PI * ((double)encoder_ticks_right / (double)TPR_right) * 1000.0 / (double)(t_now - t_last_right);
     right_Velocity = RHO * omega_Right;
 
     // Record the current time [ms]
-    t_last = t_now;
+    t_last_right = t_now;
 
     // Reset the encoder ticks counter
     encoder_ticks_right = 0;
 
     return right_Velocity;
   }
-}
+}*/
 
 void fwd(int right_Power_Input, int left_Power_Input) {
   // both sides drive forward.
@@ -202,8 +236,5 @@ void motor_ctrl(int right_Power_Input, int left_Power_Input, bool i1, bool i2, b
 
   // PWM control for each side of robot to the motor driver
   analogWrite(EA, right_Power_Input);  // right side
-  analogWrite(EB, left_Power_Input);  // left side
+  analogWrite(EB, left_Power_Input);   // left side
 }
-
-
-
