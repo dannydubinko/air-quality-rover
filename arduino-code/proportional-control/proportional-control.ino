@@ -21,8 +21,9 @@ int EB = 11;  // Left Wheels PWM pin (must be a PWM pin)
 int I3 = 4;   // Left Wheels direction digital pin 1
 int I4 = 2;   // Left Wheels direction digital pin 2
 
-int left_Power_Input = 0;
-int right_Power_Input = 0;
+
+int t_last_right = 0;
+int t_last_left = 0;
 
 // Encoder ticks per (motor) revolution (TPR)
 const int TPR_left = 3083;   //3083
@@ -167,28 +168,28 @@ void PI_controller(double velocity_target, double omega_target, int *error_buffe
   speed_buffer[1] = (int)velocity_Left;
 };
 
-double encoderFeedback_Left_Velocity() {
+// double compute() {
 
-    int left_Power_Input = (int)(right_Proportional_Constant * (desired_Left_Velocity - left_Velocity));
-    int right_Power_Input = (int)(left_Proportional_Constant * (desired_Right_Velocity - right_Velocity));
+//     int left_Power_Input = (int)(right_Proportional_Constant * (desired_Left_Velocity - left_Velocity));
+//     int right_Power_Input = (int)(left_Proportional_Constant * (desired_Right_Velocity - right_Velocity));
 
-    // Record the current time [ms]
-    t_last = t_now;
+//     // Record the current time [ms]W
+//     t_last = t_now;
 
-    // Reset the encoder ticks counter
-    encoder_ticks_left = 0;
+//     // Reset the encoder ticks counter
+//     encoder_ticks_left = 0;
 
-    // Reset the encoder ticks counter
-    encoder_ticks_right = 0;
+//     // Reset the encoder ticks counter
+//     encoder_ticks_right = 0;
 
-    Serial.print(left_Power_Input);
-    Serial.print(' ');
-    Serial.print(right_Power_Input);
-    Serial.print('\n');
+//     Serial.print(left_Power_Input);
+//     Serial.print(' ');
+//     Serial.print(right_Power_Input);
+//     Serial.print('\n');
 
-    fwd(right_Power_Input, left_Power_Input);
-  }
-}
+//     fwd(right_Power_Input, left_Power_Input);
+//   }
+// }
 
 /*double left_PI_Speed_Control(double desired_Vehicle_Speed, double desired_Omega, double left_Velocity) {
 
@@ -212,9 +213,9 @@ int right_PI_Speed_Control(double desired_Velocity, double desired_Omega, double
   Serial.print('\n');
 
   return right_Power_Input;
-}
+}*/
 
-double compute_Left_Velocity() {
+double encoderFeedback_Left_Velocity() {
 
 
   t_now = millis();
@@ -254,7 +255,7 @@ double encoderFeedback_Right_Velocity() {
 
     return right_Velocity;
   }
-}*/
+}
 
 void drive_forward(int right_PWM_Input, int left_PWM_Input) {
   // both sides drive forward.
