@@ -17,10 +17,11 @@ int I1 = 3;   // Right Wheels direction digital pin 1
 int I2 = 5;   // Right Wheels direction digital pin 2
 
 int EB = 11;  // Left Wheels PWM pin (must be a PWM pin)
+
 int I3 = 4;   // Left Wheels direction digital pin 1
 int I4 = 2;   // Left Wheels direction digital pin 2
 
-int left_Power_Input= 0;
+int left_Power_Input = 0;
 int right_Power_Input = 0;
 
 // Encoder ticks per (motor) revolution (TPR)
@@ -62,7 +63,7 @@ long encoder_ticks_last_right = 0;
 
 // This function is called when SIGNAL_A goes HIGH
 void decodeEncoderTicksRight() {
-  if (digitalRead(RIGHTWHEEL_B) == LOW) {
+  if (digitalRead(RIGHTWHEEL_B) == HIGH) {
     // SIGNAL_A leads SIGNAL_B, so count one way
     encoder_ticks_right--;
   } else {
@@ -117,7 +118,9 @@ void loop() {
 
   int desired_Vehicle_Speed = 2;
 
+
   int desired_Omega = 1 / L * (1);
+
 
   do{
     // buffers to collect data from control function
@@ -129,10 +132,9 @@ void loop() {
     drive_forward(speed[0], speed[1]);
 
     Serial.print(speed[0]);
-
-  } while (1);
-  
-} 
+    } while(1);
+    
+}
 
 // Adjust the value to be written to motors according to the error between the expected velocity and true velocity according to encoders
 // written by Sabrina (2023/02/01)u
@@ -167,16 +169,66 @@ void PI_controller(double velocity_target, double omega_target, int *error_buffe
 
 double encoderFeedback_Left_Velocity() {
 
+    int left_Power_Input = (int)(right_Proportional_Constant * (desired_Left_Velocity - left_Velocity));
+    int right_Power_Input = (int)(left_Proportional_Constant * (desired_Right_Velocity - right_Velocity));
+
+    // Record the current time [ms]
+    t_last = t_now;
+
+    // Reset the encoder ticks counter
+    encoder_ticks_left = 0;
+
+    // Reset the encoder ticks counter
+    encoder_ticks_right = 0;
+
+    Serial.print(left_Power_Input);
+    Serial.print(' ');
+    Serial.print(right_Power_Input);
+    Serial.print('\n');
+
+    fwd(right_Power_Input, left_Power_Input);
+  }
+}
+
+/*double left_PI_Speed_Control(double desired_Vehicle_Speed, double desired_Omega, double left_Velocity) {
+
+  double desired_Left_Velocity = desired_Vehicle_Speed - (0.5) * 0.2775 * desired_Omega;
+
+  int left_Power_Input = (int)(right_Proportional_Constant * (desired_Left_Velocity - left_Velocity));
+
+  Serial.print(left_Power_Input);
+  Serial.print(' ');
+
+  return left_Power_Input;
+}
+
+int right_PI_Speed_Control(double desired_Velocity, double desired_Omega, double right_Velocity) {
+
+  double desired_Right_Velocity = desired_Velocity + (0.5) * 0.2775 * desired_Omega;
+
+  int right_Power_Input = (int)(left_Proportional_Constant * (desired_Right_Velocity - right_Velocity));
+
+  Serial.print(right_Power_Input);
+  Serial.print('\n');
+
+  return right_Power_Input;
+}
+
+double compute_Left_Velocity() {
+
+
   t_now = millis();
   int roverSpeed;
-  if (t_now - t_last >= T) {
+  if (t_now - t_last_left >= T) {
     // Estimate the rotational speed [rad/s]
     int omega_Left = 2.0 * PI * ((double)encoder_ticks_left / (double)TPR_left) * 1000.0 / (double)(t_now - t_last);
   
     int left_Velocity = RHO * omega_Left;
 
+
+
     // Record the current time [ms]
-    t_last = t_now;
+    t_last_left = t_now;
 
     // Reset the encoder ticks counter
     encoder_ticks_left = 0;
@@ -190,20 +242,19 @@ double encoderFeedback_Right_Velocity() {
 
   t_now = millis();
   int roverSpeed;
-  if (t_now - t_last >= T) {
+  if (t_now - t_last_right >= T) {
     // Estimate the rotational speed [rad/s]
     int omega_Right = 2.0 * PI * ((double)encoder_ticks_right / (double)TPR_right) * 1000.0 / (double)(t_now - t_last);
     int right_Velocity = RHO * omega_Right;
-
     // Record the current time [ms]
-    t_last = t_now;
+    t_last_right = t_now;
 
     // Reset the encoder ticks counter
     encoder_ticks_right = 0;
 
     return right_Velocity;
   }
-}
+}*/
 
 void drive_forward(int right_PWM_Input, int left_PWM_Input) {
   // both sides drive forward.
@@ -220,4 +271,5 @@ void motor_ctrl(int right_PWM_Input, int left_PWM_Input, bool i1, bool i2, bool 
   // PWM control for each side of robot to the motor driver
   analogWrite(EA, right_PWM_Input);  // right side
   analogWrite(EB, left_PWM_Input);  // left side
+
 }
