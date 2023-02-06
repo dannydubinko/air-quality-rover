@@ -12,11 +12,11 @@
  *
  */
 
-int EA = 19;  // Right Wheels PWM pin (must be a PWM pin).
+int EA = 6;  // Right Wheels PWM pin (must be a PWM pin).
 int I1 = 3;   // Right Wheels direction digital pin 1
 int I2 = 5;   // Right Wheels direction digital pin 2
 
-int EB = 18;  // Left Wheels PWM pin (must be a PWM pin)
+int EB = 11;  // Left Wheels PWM pin (must be a PWM pin)
 int I3 = 4;   // Left Wheels direction digital pin 1
 int I4 = 2;   // Left Wheels direction digital pin 2
 
@@ -36,18 +36,11 @@ const double k_P_R = 200;
 const double k_I_L = 100;
 const double k_I_R = 100;
 
-// Variable to store estimated angular rate of left wheel [rad/s]
-double desired_Vehicle_Speed = 0;
-double desired_Omega = 0;
-double omega_Left = 0.0;
-double omega_Right = 0.0;
-double left_Velocity = 0.0;
-double right_Velocity = 0.0;
 double error_sum_right = 0;
 double error_sum_left = 0;
 
 // Sampling interval for measurements in milliseconds
-const int T = 1000;
+const int T = 50;
 // Counters for milliseconds during interval
 long t_now = 0;
 long t_last = 0;
@@ -122,7 +115,7 @@ void setup() {
 
 void loop() {
 
-  int desired_Vehicle_Speed = 200;
+  int desired_Vehicle_Speed = 2;
 
   int desired_Omega = 1 / L * (1);
 
@@ -135,12 +128,14 @@ void loop() {
 
     drive_forward(speed[0], speed[1]);
 
+    Serial.print(speed[0]);
+
   } while (1);
   
 } 
 
 // Adjust the value to be written to motors according to the error between the expected velocity and true velocity according to encoders
-// written by Sabrina (2023/02/01)
+// written by Sabrina (2023/02/01)u
 void PI_controller(double velocity_target, double omega_target, int *error_buffer, int *speed_buffer){
   // compute difference between current expected velocity and the feedback from the encoder (true velocity)
   double error_right = (velocity_target + (1/2) * L * omega_target) - encoderFeedback_Right_Velocity();
@@ -176,9 +171,9 @@ double encoderFeedback_Left_Velocity() {
   int roverSpeed;
   if (t_now - t_last >= T) {
     // Estimate the rotational speed [rad/s]
-    omega_Left = 2.0 * PI * ((double)encoder_ticks_left / (double)TPR_left) * 1000.0 / (double)(t_now - t_last);
+    int omega_Left = 2.0 * PI * ((double)encoder_ticks_left / (double)TPR_left) * 1000.0 / (double)(t_now - t_last);
   
-    left_Velocity = RHO * omega_Left;
+    int left_Velocity = RHO * omega_Left;
 
     // Record the current time [ms]
     t_last = t_now;
@@ -197,8 +192,8 @@ double encoderFeedback_Right_Velocity() {
   int roverSpeed;
   if (t_now - t_last >= T) {
     // Estimate the rotational speed [rad/s]
-    omega_Right = 2.0 * PI * ((double)encoder_ticks_right / (double)TPR_right) * 1000.0 / (double)(t_now - t_last);
-    right_Velocity = RHO * omega_Right;
+    int omega_Right = 2.0 * PI * ((double)encoder_ticks_right / (double)TPR_right) * 1000.0 / (double)(t_now - t_last);
+    int right_Velocity = RHO * omega_Right;
 
     // Record the current time [ms]
     t_last = t_now;
