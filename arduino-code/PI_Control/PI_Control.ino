@@ -356,8 +356,8 @@ void loop() {
 
 void left_wheel_ctrl(int uB) {
   // Input selected direction
-  digitalWrite(I3, i3);
-  digitalWrite(I4, i4);
+  digitalWrite(I3, HIGH);
+  digitalWrite(I4, LOW);
 
   // PWM control for each side of robot to the motor driver
   analogWrite(EB, uB);  // left side
@@ -365,8 +365,8 @@ void left_wheel_ctrl(int uB) {
 
 void right_wheel_ctrl(int uA) {
   // Input selected direction
-  digitalWrite(I1, i1);
-  digitalWrite(I2, i2);
+  digitalWrite(I1, HIGH);
+  digitalWrite(I2, LOW);
 
   // PWM control for each side of robot to the motor driver
   analogWrite(EA, uA);  // right side
