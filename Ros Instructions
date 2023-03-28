@@ -1,0 +1,112 @@
+make a ros node: 
+- go into scripts in catkin
+- add a py file
+- make it executable
+
+
+figure out data of a topic:
+1. rostopic list (command)
+2. find the topic you need
+3. rostopic info "topic"(command)
+4. copy the "type"
+5. rosmsg show "type" (command)
+
+
+*if importing a library you have to update dependancies in package.xml folder
+
+
+run nodes: rosrun <package> <node> (command) 
+
+
+https://github.com/davidusb-geek/ros-robotics-python/blob/master/ros_cmd_vel_listener_rpm_publisher.py
+
+
+
+Joy for Gamepad: http://wiki.ros.org/joy/
+_______________________________________________________________________________
+roscore
+rosrun joy joy_node
+rosrun teleop_twist_joy teleop_node
+rosrun rosserial_python serial_node.py /dev/ttyACM0
+rostopic echo /cmd_vel
+
+2. https://atadiat.com/en/e-rosserial-arduino-introduction/
+1. https://snapcraft.io/blog/your-first-robot-the-controller-3-5
+_______________________________________________________________________________
+
+Inputs for Gamepad: https://pypi.org/project/inputs/
+
+
+Arduino Port: 
+- /dev/ttyACM0
+      or
+- /dev/ttyACM0
+
+rosrun rosserial_python serial_node.py /dev/ttyACM0
+
+So..rosserial_arduino was always setting the baud rate of arduino as 57600. So, for rosserial_python, only the baud rate of 57600 was working.I made rosserial_arduino run at the baud rate of 9600 (or 19200, etc.) by editing ArduinoHardware.h in <sketchbook>/libraries/ros_lib and then specified the same baud rate for rosserial_python and it is working now.
+Just make sure to change the baud rates for both rosserial_arduino and rosserial_python if you want to use a non-default baud rate.
+
+
+
+
+#define enA 3
+#define in1 1
+#define in2 2
+
+#include <ros.h>
+#include <std_msgs/String.h>
+#include <std_msgs/Empty.h>
+#include <geometry_msgs/Twist.h>
+#include <sensor_msgs/Joy.h>
+#include <Servo.h>
+
+int left_thumb = 0;
+int right_thumb = 0;
+
+Servo myservo;
+int pos = 0;    // variable to store the servo position
+int u;
+int val;
+
+ros::NodeHandle nh;
+
+void motorForward(int u) {
+  digitalWrite(in1, HIGH);
+  digitalWrite(in2, LOW);
+  analogWrite(enA, u);
+}
+
+//void velocity(const geometry_msgs::Twist& msg) {
+//  float x = msg.linear.x;
+//  motorForward(x);
+//}
+
+void velocity(const sensor_msgs::Joy& msg) {
+  left_thumb = msg.axes[1];
+  right_thumb = msg.axes[4];
+  int u = map(right_thumb, 0, 1, 95, 255);
+  digitalWrite(in1, HIGH);
+  digitalWrite(in2, LOW);
+  analogWrite(enA, u);
+}
+
+//ros::Subscriber<geometry_msgs::Twist> sub("cmd_vel", &velocity );
+ros::Subscriber<sensor_msgs::Joy> sub("joy", &velocity );
+
+void setup() {
+  // put your setup code here, to run once:
+  pinMode(enA, OUTPUT);
+  pinMode(in1, OUTPUT);
+  pinMode(in2, OUTPUT);
+  myservo.attach(10);
+  Serial.begin(57600);
+  nh.initNode();
+  nh.subscribe(sub);
+}
+
+void loop() {
+  // put your main code here, to run repeatedly:
+  nh.spinOnce();
+  delay(1);
+}
